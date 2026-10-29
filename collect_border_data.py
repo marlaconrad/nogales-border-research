@@ -2,8 +2,6 @@
 """Append timestamped CBP northbound border-wait observations for Nogales crossings."""
 import csv
 import json
-import os
-import sys
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +22,9 @@ SECTIONS = {
     "commercial_vehicle_lanes": ("commercial_vehicle", "cv_automation_type"),
 }
 LANE_KEYS = {"standard_lanes", "ready_lanes", "NEXUS_SENTRI_lanes", "FAST_lanes"}
+REQUIRED_CROSSINGS = ("deconcini", "mariposa")
+OPTIONAL_PEDESTRIAN_CROSSINGS = ("morley",)
+
 
 def extract(payload, collected_at=None):
     if not isinstance(payload, list):
@@ -31,23 +32,31 @@ def extract(payload, collected_at=None):
     now = collected_at or datetime.now(timezone.utc)
     utc = now.astimezone(timezone.utc).isoformat(timespec="seconds")
     az = now.astimezone(ZoneInfo("America/Phoenix")).isoformat(timespec="seconds")
-    selected = [
-        p for p in payload if isinstance(p, dict)
-        and p.get("border") == "Mexican Border"
-        and (
-            "nogales" in str(p.get("port_name", "")).lower()
-            or "nogales" in str(p.get("crossing_name", "")).lower()
-        )
-        and any(s in (str(p.get("crossing_name", ""))+" "+str(p.get("port_name", ""))).lower()
-                for s in ("deconcini", "mariposa"))
-    ]
-    names = " ".join(str(p.get("crossing_name", "")) for p in selected).lower()
-    if not ("deconcini" in names and "mariposa" in names):
+
+    selected = []
+    for port in payload:
+        if not isinstance(port, dict) or port.get("border") != "Mexican Border":
+            continue
+        port_name = str(port.get("port_name", ""))
+        crossing_name = str(port.get("crossing_name", ""))
+        combined_name = (port_name + " " + crossing_name).lower()
+        if "nogales" not in combined_name:
+            continue
+        if any(name in combined_name for name in REQUIRED_CROSSINGS + OPTIONAL_PEDESTRIAN_CROSSINGS):
+            selected.append(port)
+
+    selected_names = " ".join(str(p.get("crossing_name", "")) for p in selected).lower()
+    if not all(name in selected_names for name in REQUIRED_CROSSINGS):
         raise ValueError("Expected both DeConcini and Mariposa in the CBP response; no data written")
+
     rows = []
-    for p in selected:
+    for port in selected:
+        combined_name = (str(port.get("port_name", "")) + " " + str(port.get("crossing_name", ""))).lower()
+        is_morley = "morley" in combined_name
         for section, (traffic_type, auto_key) in SECTIONS.items():
-            group = p.get(section) or {}
+            if is_morley and traffic_type != "pedestrian":
+                continue
+            group = port.get(section) or {}
             if not isinstance(group, dict):
                 continue
             for lane_key in sorted(LANE_KEYS):
@@ -57,13 +66,13 @@ def extract(payload, collected_at=None):
                 rows.append({
                     "collected_at_utc": utc,
                     "collected_at_arizona": az,
-                    "port_number": p.get("port_number", ""),
-                    "port_name": p.get("port_name", ""),
-                    "crossing_name": p.get("crossing_name", ""),
-                    "border": p.get("border", ""),
-                    "port_status": p.get("port_status", ""),
-                    "cbp_date": p.get("date", ""),
-                    "cbp_time": p.get("time", ""),
+                    "port_number": port.get("port_number", ""),
+                    "port_name": port.get("port_name", ""),
+                    "crossing_name": port.get("crossing_name", ""),
+                    "border": port.get("border", ""),
+                    "port_status": port.get("port_status", ""),
+                    "cbp_date": port.get("date", ""),
+                    "cbp_time": port.get("time", ""),
                     "traffic_type": traffic_type,
                     "lane_category": lane_key,
                     "maximum_lanes": group.get("maximum_lanes", ""),
@@ -72,11 +81,12 @@ def extract(payload, collected_at=None):
                     "delay_minutes": lane.get("delay_minutes", ""),
                     "operational_status": lane.get("operational_status", ""),
                     "cbp_update_time": lane.get("update_time", ""),
-                    "construction_notice": p.get("construction_notice", ""),
+                    "construction_notice": port.get("construction_notice", ""),
                 })
     if not rows:
         raise ValueError("No lane-category observations found; no data written")
     return rows
+
 
 def main():
     request = urllib.request.Request(
@@ -97,7 +107,11 @@ def main():
         if not exists:
             writer.writeheader()
         writer.writerows(rows)
-    print(f"Saved {len(rows)} observations for DeConcini and Mariposa at {rows[0]['collected_at_utc']}")
+    captured = sorted({str(row["crossing_name"]) for row in rows})
+    print(f"Saved {len(rows)} observations for {', '.join(captured)} at {rows[0]['collected_at_utc']}")
+    if not any("morley" in str(row["crossing_name"]).lower() for row in rows):
+        print("Note: CBP did not provide Morley Gate pedestrian lane observations in this response")
+
 
 if __name__ == "__main__":
     main()
