@@ -3199,3 +3199,26 @@ Go to www.GetYouHome.gov for more information."
 2026-11-04T02:51:44+00:00,2026-11-03T19:51:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,19:51:35,commercial_vehicle,standard_lanes,8,RFID,,,Lanes Closed,,
 2026-11-04T02:51:44+00:00,2026-11-03T19:51:44-07:00,260403,Nogales,Morley Gate,Mexican Border,Closed,11/3/2026,19:51:35,pedestrian,ready_lanes,4,Manual,,,N/A,,
 2026-11-04T02:51:44+00:00,2026-11-03T19:51:44-07:00,260403,Nogales,Morley Gate,Mexican Border,Closed,11/3/2026,19:51:35,pedestrian,standard_lanes,4,Manual,2,10,delay,At 5:00 pm MST,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,NEXUS_SENTRI_lanes,8,Manual,2,20,delay,At 7:00 pm MST,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,ready_lanes,8,Manual,,,N/A,,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,standard_lanes,8,Manual,4,60,delay,At 7:00 pm MST,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,pedestrian,ready_lanes,6,Manual,,,N/A,,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,pedestrian,standard_lanes,6,Manual,3,30,delay,At 7:00 pm MST,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,commercial_vehicle,FAST_lanes,N/A,Manual,,,N/A,,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260401,Nogales,Deconcini,Mexican Border,Open,11/3/2026,20:46:48,commercial_vehicle,standard_lanes,N/A,Manual,,,N/A,,"Ready Lane is open from 6AM - 10PM seven days a week.  Ready Lane is on the left side as you approach the port.
+Go to www.GetYouHome.gov for more information."
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,NEXUS_SENTRI_lanes,13,Manual,,,N/A,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,ready_lanes,13,Manual,,,N/A,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,passenger_vehicle,standard_lanes,13,Manual,6,90,delay,At 7:00 pm MST,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,pedestrian,ready_lanes,6,Manual,,,N/A,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,pedestrian,standard_lanes,6,Manual,2,0,no delay,At 7:00 pm MST,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,commercial_vehicle,FAST_lanes,8,RFID,,,Lanes Closed,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260402,Nogales,Mariposa,Mexican Border,Open,11/3/2026,20:46:48,commercial_vehicle,standard_lanes,8,RFID,,,Lanes Closed,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260403,Nogales,Morley Gate,Mexican Border,Closed,11/3/2026,20:46:48,pedestrian,ready_lanes,4,Manual,,,N/A,,
+2026-11-04T03:53:44+00:00,2026-11-03T20:53:44-07:00,260403,Nogales,Morley Gate,Mexican Border,Closed,11/3/2026,20:46:48,pedestrian,standard_lanes,4,Manual,2,10,delay,At 5:00 pm MST,
