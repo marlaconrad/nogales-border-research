@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Append timestamped CBP northbound border-wait observations for Nogales crossings."""
 import csv
+import http.client
 import json
 import time
 import urllib.error
@@ -122,6 +123,15 @@ def main():
 
         except (urllib.error.URLError, TimeoutError) as error:
             print(f"Connection error: {error}", flush=True)
+
+        except (http.client.HTTPException, ConnectionError) as error:
+            # Connection dropped or response cut off while downloading.
+            print(f"Connection interrupted during download: {error!r}", flush=True)
+
+        except json.JSONDecodeError as error:
+            # Usually a truncated or temporary non-JSON response; retry.
+            # Structural problems found by extract() are NOT retried.
+            print(f"Response was not valid JSON: {error}", flush=True)
 
         if attempt == max_attempts:
             raise RuntimeError(
