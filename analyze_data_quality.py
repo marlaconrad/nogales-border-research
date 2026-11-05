@@ -4,7 +4,7 @@
 Usage: python analyze_data_quality.py [input.csv] [output_directory]
 Requires Python 3.9+; no third-party packages.
 
-Methodology version: 2 (2026-11-05)
+Methodology version: 2.1 (2026-11-05)
   - Researcher-supplied schedules (see SCHEDULE NOTES below)
   - Freshness flag from the age of CBP's per-lane update time
   - Lane categories not offered at a crossing are labeled, not treated as missing
@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 INPUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('data/nogales_border_observations.csv')
 OUTPUT = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('reports')
 AZ = ZoneInfo('America/Phoenix')
-METHODOLOGY_VERSION = '2'
+METHODOLOGY_VERSION = '2.1'
 
 # Minutes either side of a scheduled opening/closing in which CBP's status may
 # legitimately lag the official time. Rows here are flagged, not treated as errors.
@@ -44,6 +44,7 @@ STALE_MIN = 120
 #       Sources cited by researcher: ADOT port-of-entry page; CBP BWT.
 #   Morley Gate: pedestrians only, 10 AM - 6 PM daily.
 #   Ready Lanes: not offered at these crossings (researcher-confirmed).
+#   Mariposa SENTRI: not offered (researcher-confirmed).
 #   DeConcini commercial: not offered (commercial traffic uses Mariposa).
 SENTRI_OPEN = time(6)  # placeholder until verified
 
@@ -70,7 +71,7 @@ def schedule_windows(crossing, traffic, category, day):
                 return [_window(time(8), time(18))]
             return []  # closed Sunday
         if category == 'NEXUS_SENTRI_lanes':
-            return 'schedule_unknown'
+            return 'not_offered'  # no SENTRI lane at Mariposa (researcher-confirmed)
         return [_window(time(6), time(22))]
     if 'deconcini' in name or 'de concini' in name:
         if traffic == 'commercial_vehicle':
@@ -198,6 +199,8 @@ def audit(rows):
             age = inherited_ages.get((row['collected_at_utc'], row['crossing_name'], row['traffic_type']))
             age_source = 'same_section_this_run' if age is not None else 'none'
         fresh = freshness(age)
+        if sched == 'not_offered':
+            age, age_source, fresh = None, 'none', 'not_applicable'
         state = (row['operational_status'] or '').strip().lower()
 
         if sched == 'not_offered':
