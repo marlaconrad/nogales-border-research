@@ -2,6 +2,8 @@
 """Append timestamped CBP northbound border-wait observations for Nogales crossings."""
 import csv
 import json
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -88,30 +90,84 @@ def extract(payload, collected_at=None):
     return rows
 
 
+
 def main():
     request = urllib.request.Request(
-        URL, headers={"User-Agent": "NogalesAcademicResearch/1.0 (public CBP data)", "Accept": "application/json"}
+        URL,
+        headers={
+            "User-Agent": "NogalesAcademicResearch/1.0 (public CBP data)",
+            "Accept": "application/json",
+        },
     )
-    with urllib.request.urlopen(request, timeout=35) as response:
-        payload = json.load(response)
-    rows = extract(payload)
+
+    retry_delays = [15, 30, 60]
+    max_attempts = len(retry_delays) + 1
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(f"CBP request attempt {attempt}/{max_attempts}", flush=True)
+
+            with urllib.request.urlopen(request, timeout=35) as response:
+                payload = json.load(response)
+
+            rows = extract(payload)
+            print("CBP data retrieved and validated successfully.")
+            break
+
+        except urllib.error.HTTPError as error:
+            if error.code not in (429, 500, 502, 503, 504):
+                raise
+
+            print(f"Temporary HTTP error: {error.code}", flush=True)
+
+        except (urllib.error.URLError, TimeoutError) as error:
+            print(f"Connection error: {error}", flush=True)
+
+        if attempt == max_attempts:
+            raise RuntimeError(
+                f"CBP collection failed after {max_attempts} attempts. "
+                "No new observations were written."
+            )
+
+        delay = retry_delays[attempt - 1]
+        print(f"Waiting {delay} seconds before retrying...", flush=True)
+        time.sleep(delay)
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     exists = OUT.exists() and OUT.stat().st_size > 0
+
     if exists:
         with OUT.open(newline="", encoding="utf-8") as handle:
             header = next(csv.reader(handle))
+
         if header != COLUMNS:
-            raise ValueError("Existing CSV columns differ from script; refusing to append")
+            raise ValueError(
+                "Existing CSV columns differ from script; refusing to append"
+            )
+
     with OUT.open("a", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
+
         if not exists:
             writer.writeheader()
-        writer.writerows(rows)
-    captured = sorted({str(row["crossing_name"]) for row in rows})
-    print(f"Saved {len(rows)} observations for {', '.join(captured)} at {rows[0]['collected_at_utc']}")
-    if not any("morley" in str(row["crossing_name"]).lower() for row in rows):
-        print("Note: CBP did not provide Morley Gate pedestrian lane observations in this response")
 
+        writer.writerows(rows)
+
+    captured = sorted({str(row["crossing_name"]) for row in rows})
+
+    print(
+        f"Saved {len(rows)} observations for "
+        f"{', '.join(captured)} at {rows[0]['collected_at_utc']}"
+    )
+
+    if not any(
+        "morley" in str(row["crossing_name"]).lower()
+        for row in rows
+    ):
+        print(
+            "Note: CBP did not provide Morley Gate "
+            "pedestrian lane observations in this response"
+        )
 
 if __name__ == "__main__":
     main()
