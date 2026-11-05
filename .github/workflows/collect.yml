@@ -1,4 +1,3 @@
-
 name: Collect Nogales border observations
 
 on:
@@ -9,6 +8,7 @@ on:
 permissions:
   contents: write
 
+# Only one collection at a time; a second run waits instead of overlapping.
 concurrency:
   group: nogales-border-collection
   cancel-in-progress: false
@@ -16,35 +16,56 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Worst case for the collector alone is about 4 minutes (4 attempts with
+    # 35-second timeouts plus 15/30/60-second waits), so allow headroom.
+    timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Collect readings
         run: python collect_border_data.py
 
+      # If the audit fails, still save the new observations (next step).
       - name: Analyze data quality
+        continue-on-error: true
         run: python analyze_data_quality.py
 
-      - name: Commit updated data and reports
+      - name: Commit updated data and summary report
         run: |
           git add data/nogales_border_observations.csv
-          git add reports/data_quality_detail.csv
-          git add reports/data_quality_summary.csv
-
-          if ! git diff --cached --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Update CBP observations and data-quality reports"
-            git push
-          else
-            echo "No changes to commit."
+          # Only the small summary is committed every run. The detail report is
+          # larger than the raw data and is rewritten in full each time, which
+          # would bloat the repository history; regenerate it when needed with
+          #   python analyze_data_quality.py
+          if [ -f reports/data_quality_summary.csv ]; then
+            git add reports/data_quality_summary.csv
           fi
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update CBP observations and data-quality summary"
+
+          # If the repository changed since checkout (for example, a manual
+          # commit), rebase onto it and retry instead of losing this run's data.
+          for attempt in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected; rebasing onto latest and retrying ($attempt/3)"
+            git pull --rebase
+          done
+          echo "Push failed after 3 attempts" >&2
+          exit 1
