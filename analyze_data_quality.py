@@ -4,10 +4,11 @@
 Usage: python analyze_data_quality.py [input.csv] [output_directory]
 Requires Python 3.9+; no third-party packages.
 
-Methodology version: 2.1 (2026-11-05)
+Methodology version: 2.2 (2026-11-09)
   - Researcher-supplied schedules (see SCHEDULE NOTES below)
   - Freshness flag from the age of CBP's per-lane update time
   - Lane categories not offered at a crossing are labeled, not treated as missing
+  - v2.2: CBP update times up to 60 min ahead of collection count as current
   - Average waits use only scheduled-open, fresh, numeric, not-"Lanes Closed" rows
 """
 import csv
@@ -21,7 +22,7 @@ from zoneinfo import ZoneInfo
 INPUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('data/nogales_border_observations.csv')
 OUTPUT = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('reports')
 AZ = ZoneInfo('America/Phoenix')
-METHODOLOGY_VERSION = '2.1'
+METHODOLOGY_VERSION = '2.2'
 
 # Minutes either side of a scheduled opening/closing in which CBP's status may
 # legitimately lag the official time. Rows here are flagged, not treated as errors.
@@ -125,9 +126,12 @@ def update_age_minutes(collected, update_text):
     hour = int(m.group(1)) % 12 + (12 if m.group(3).lower() == 'p' else 0)
     local = collected.replace(tzinfo=None)
     upd = local.replace(hour=hour, minute=int(m.group(2)), second=0, microsecond=0)
-    if upd > local + timedelta(minutes=10):  # small allowance for clock differences
+    # CBP sometimes posts an update time up to about an hour AHEAD of the actual
+    # time (e.g. 'At 2:00 pm' at 1:22 pm). Treat those as current (age 0), not as
+    # yesterday's update. Only times more than 60 minutes ahead are prior-day.
+    if upd > local + timedelta(minutes=60):
         upd -= timedelta(days=1)
-    return (local - upd).total_seconds() / 60
+    return max(0.0, (local - upd).total_seconds() / 60)
 
 
 def freshness(age):
