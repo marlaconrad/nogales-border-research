@@ -4,10 +4,11 @@
 Usage: python analyze_data_quality.py [input.csv] [output_directory]
 Requires Python 3.9+; no third-party packages.
 
-Methodology version: 2.2 (2026-11-09)
+Methodology version: 2.3 (2026-11-10)
   - Researcher-supplied schedules (see SCHEDULE NOTES below)
   - Freshness flag from the age of CBP's per-lane update time
   - Lane categories not offered at a crossing are labeled, not treated as missing
+  - v2.3: Mariposa cargo hours from CBP's official port page
   - v2.2: CBP update times up to 60 min ahead of collection count as current
   - Average waits use only scheduled-open, fresh, numeric, not-"Lanes Closed" rows
 """
@@ -22,7 +23,7 @@ from zoneinfo import ZoneInfo
 INPUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('data/nogales_border_observations.csv')
 OUTPUT = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('reports')
 AZ = ZoneInfo('America/Phoenix')
-METHODOLOGY_VERSION = '2.2'
+METHODOLOGY_VERSION = '2.3'
 
 # Minutes either side of a scheduled opening/closing in which CBP's status may
 # legitimately lag the official time. Rows here are flagged, not treated as errors.
@@ -40,9 +41,11 @@ STALE_MIN = 120
 #       closes 10 PM Mon-Thu, midnight Fri-Sun. Source: Google listing, not CBP.
 #       OPENING TIME UNVERIFIED: 6 AM is a placeholder; data suggests ~6:45-7:30 AM.
 #       The schedule is for the approach gate, not necessarily the CBP booths.
-#   Mariposa passenger vehicles and pedestrians: 6 AM - 10 PM daily.
-#   Mariposa commercial: Mon-Fri 6 AM - 10 PM; Sat 8 AM - 6 PM; closed Sunday.
-#       Sources cited by researcher: ADOT port-of-entry page; CBP BWT.
+#   Mariposa passenger vehicles and pedestrians: 6 AM - 10 PM daily (CBP port page).
+#   Mariposa commercial (cargo): Mon-Fri 8 AM - 7 PM; Sat 8 AM - 6 PM; Sun 10 AM - 2 PM
+#       (CBP port page, updated Mar 5, 2024). Replaces ADOT hours used before v2.3.
+#   Morley Gate: CBP port page (Mar 2024) says 10 AM - 2 PM; GSA NOI (July 2026) and
+#       CBP feed data show 10 AM - 6 PM. 10 AM - 6 PM is used; discrepancy noted.
 #   Morley Gate: pedestrians only, 10 AM - 6 PM daily.
 #   Ready Lanes: not offered at these crossings (researcher-confirmed).
 #   Mariposa SENTRI: not offered (researcher-confirmed).
@@ -66,11 +69,14 @@ def schedule_windows(crossing, traffic, category, day):
         return [_window(time(10), time(18))]
     if 'mariposa' in name:
         if traffic == 'commercial_vehicle':
+            # CBP Nogales port page (cbp.gov/about/contact/ports/nogales-arizona-2604,
+            # updated Mar 5, 2024): cargo Mon-Fri 8 AM-7 PM, Sat 8 AM-6 PM, Sun 10 AM-2 PM.
+            # Sunday readings so far show closed all day; flagged for verification.
             if wd <= 4:
-                return [_window(time(6), time(22))]
+                return [_window(time(8), time(19))]
             if wd == 5:
                 return [_window(time(8), time(18))]
-            return []  # closed Sunday
+            return [_window(time(10), time(14))]
         if category == 'NEXUS_SENTRI_lanes':
             return 'not_offered'  # no SENTRI lane at Mariposa (researcher-confirmed)
         return [_window(time(6), time(22))]
